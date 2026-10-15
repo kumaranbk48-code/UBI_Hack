@@ -1,4 +1,4 @@
-# 🚗 SafeDrive IQ — Privacy-First Usage-Based Car Insurance
+# 🚗 SafeDrive IQ — Privacy-First  Usage-Based Car Insurance
 ### Hackathon Problem Statement PS-008: InsurTech & IoT Telematics
 
 SafeDrive IQ is an end-to-end usage-based insurance pricing platform where **safe driving directly lowers your monthly car insurance premium**, the price is **100% transparent and explainable**, drivers control their **privacy through granular consent tiers**, and **unfair penalties can be contested with human-in-the-loop dispute review**.
