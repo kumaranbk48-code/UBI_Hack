@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Shield, ShieldCheck, Database, Sliders, ChevronDown, Check, ExternalLink } from 'lucide-react';
+import { Shield, ShieldCheck, Database, Sliders, ChevronDown, Check, ExternalLink, ArrowDown } from 'lucide-react';
+import { PROTOTYPE_PRIVACY_NOTE } from '../data/privacyCopy';
 
 export function Navbar({
   activeTab = 'policy', // 'policy' | 'trips' | 'underwriter'
@@ -150,22 +151,25 @@ export function Navbar({
                 </div>
 
                 <div className="py-3 space-y-2.5 text-[12px] text-ink-muted border-b border-line">
-                  <div className="flex items-start gap-2">
+                  <p className="text-[12px] text-ink leading-relaxed pb-1 border-b border-line/60">
+                    {PROTOTYPE_PRIVACY_NOTE}
+                  </p>
+                  <div className="flex items-start gap-2 pt-1">
                     <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
                     <span>
-                      <strong className="text-ink font-medium">On-Device Edge Computation:</strong> Raw GPS coordinates and instantaneous accelerometer reads never leave your local device.
+                      <strong className="text-ink font-medium">Speed & Acceleration Readings:</strong> Raw sensor traces are processed in local memory and discarded immediately.
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
                     <span>
-                      <strong className="text-ink font-medium">Data Minimization:</strong> Insurer receives only verifiable actuarial aggregates (distance, night proportion, gentle stops).
+                      <strong className="text-ink font-medium">Monthly Totals Only:</strong> Only monthly distance, night driving ratio, and gentle stopping totals are retained.
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
                     <span>
-                      <strong className="text-ink font-medium">Retention Policy:</strong> Trip aggregates automatically purge from insurer ledger after {consent?.autoDeleteDays || 30} days.
+                      <strong className="text-ink font-medium">Retention Policy:</strong> Demo setting: no data is deleted in this prototype.
                     </span>
                   </div>
                 </div>
@@ -190,7 +194,25 @@ export function Navbar({
                   </div>
                 </div>
 
-                <div className="pt-3">
+                <div className="pt-3 space-y-2">
+                  {/* Link to What leaves your device section per Phase 2A task 3 */}
+                  <a
+                    href="#what-leaves-your-device"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveTab('policy');
+                      setIsPrivacyPopoverOpen(false);
+                      setTimeout(() => {
+                        const el = document.getElementById('what-leaves-your-device');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }, 50);
+                    }}
+                    className="w-full flex items-center justify-between text-xs text-brand hover:text-brand-hover font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand rounded-[2px] py-1"
+                  >
+                    <span>See what stays on your device</span>
+                    <ArrowDown className="w-3.5 h-3.5 stroke-[1.5]" />
+                  </a>
+
                   <button
                     onClick={() => {
                       setIsPrivacyPopoverOpen(false);

@@ -140,21 +140,30 @@ router.post('/upload', async (req, res) => {
       true
     );
 
-    // 7. EDGE PRIVACY: Only aggregated record is saved
-    const summaryRecord = await db.saveTripSummary({
-      monthYear: '2026-10',
-      totalDistanceKm: metrics.totalDistanceKm,
-      nightDistanceKm: metrics.nightDistanceKm,
-      harshBrakeEvents: metrics.harshBrakeEvents,
-      sharpTurnEvents: metrics.sharpTurnEvents,
-      speedingKm: metrics.speedingKm,
-      safetyScore: scoreData.safetyScore,
-      confidenceBadge: qualityResult.confidenceBadge,
-      tamperStatus: finalTamperStatus,
-    });
+    const isRejected = finalTamperStatus === 'SIGNATURE_MISMATCH' || !tamperResult.isValid;
 
-    await db.saveQuote(quote);
-    await db.updateVehicleOdometer(endOdo);
+    let summaryRecord = null;
+    let finalQuote = quote;
+
+    if (!isRejected) {
+      // 7. EDGE PRIVACY: Only aggregated record is saved
+      summaryRecord = await db.saveTripSummary({
+        monthYear: '2026-10',
+        totalDistanceKm: metrics.totalDistanceKm,
+        nightDistanceKm: metrics.nightDistanceKm,
+        harshBrakeEvents: metrics.harshBrakeEvents,
+        sharpTurnEvents: metrics.sharpTurnEvents,
+        speedingKm: metrics.speedingKm,
+        safetyScore: scoreData.safetyScore,
+        confidenceBadge: qualityResult.confidenceBadge,
+        tamperStatus: finalTamperStatus,
+      });
+
+      await db.saveQuote(quote);
+      await db.updateVehicleOdometer(endOdo);
+    } else {
+      finalQuote = null;
+    }
 
     return res.json({
       success: true,
@@ -174,8 +183,8 @@ router.post('/upload', async (req, res) => {
       },
       metrics,
       scoreData,
-      quote,
-      summaryId: summaryRecord.id,
+      quote: finalQuote,
+      summaryId: summaryRecord ? summaryRecord.id : null,
       privacyStatement:
         'Raw second-by-second telematics was processed on the client. Only the consented score and aggregate mileage were written to the insurer ledger.',
     });

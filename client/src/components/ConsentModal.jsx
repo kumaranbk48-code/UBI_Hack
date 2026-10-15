@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ShieldCheck, Check, Lock } from 'lucide-react';
 import { Button } from './primitives';
+import { PROTOTYPE_PRIVACY_NOTE } from '../data/privacyCopy';
 
 export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent }) {
   if (!isOpen) return null;
@@ -9,6 +10,39 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
   const [autoDeleteDays, setAutoDeleteDays] = useState(currentConsent?.autoDeleteDays || 30);
   const [fallbackFixed, setFallbackFixed] = useState(currentConsent?.fallbackFixed || false);
   const [saving, setSaving] = useState(false);
+  const modalRef = useRef(null);
+
+  // Accessible dialog: close on Escape key & trap focus
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const tiers = [
     {
@@ -53,9 +87,12 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
       role="dialog"
       aria-modal="true"
       aria-labelledby="consentModalTitle"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-[2px] animate-fadeIn"
     >
-      <div className="relative w-full max-w-3xl rounded-[10px] bg-surface-raised border border-line p-6 sm:p-7 shadow-popover overflow-y-auto max-h-[90vh]">
+      <div ref={modalRef} className="relative w-full max-w-3xl rounded-[10px] bg-surface-raised border border-line p-6 sm:p-7 shadow-popover overflow-y-auto max-h-[90vh]">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-line">
           <div>
@@ -65,13 +102,13 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
             <h2 id="consentModalTitle" className="text-xl font-serif font-normal text-ink">
               PrivacyShield™ consent controls
             </h2>
-            <p className="text-[13px] text-ink-muted mt-1">
-              Select the data tier you consent to share. Raw trip records remain strictly on your local device.
+            <p className="text-[13px] text-ink-muted mt-1 leading-relaxed">
+              {PROTOTYPE_PRIVACY_NOTE}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-[4px] text-ink-subtle hover:text-ink focus-visible:outline-none"
+            className="p-1 rounded-[4px] text-ink-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand min-w-[32px] min-h-[32px] flex items-center justify-center"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5 stroke-[1.5]" />
@@ -98,7 +135,7 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-medium text-ink-subtle uppercase tracking-[0.06em]">
+                      <span className="text-[12px] font-medium text-ink-muted">
                         {t.badge}
                       </span>
                       <span className="text-[12px] font-semibold text-brand tabular-nums">
@@ -109,7 +146,7 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
                     <h3 className="text-[14px] font-semibold text-ink mb-2">{t.name}</h3>
 
                     <div className="space-y-1.5 text-[12px] mb-3">
-                      <div className="text-ink-subtle font-medium text-[11px] uppercase tracking-[0.05em]">Shared:</div>
+                      <div className="text-ink-muted font-medium text-[12px]">Shared with insurer:</div>
                       {t.dataShared.map((d, i) => (
                         <div key={i} className="flex items-start gap-1.5 text-ink-muted">
                           <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
@@ -144,7 +181,7 @@ export function ConsentModal({ isOpen, onClose, currentConsent, onSaveConsent })
                 Auto-Delete retention window
               </div>
               <div className="text-[12px] text-ink-muted">
-                Trip aggregates are permanently purged from insurer servers after:
+                Demo setting: no data is deleted in this prototype
               </div>
             </div>
 

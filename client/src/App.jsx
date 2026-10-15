@@ -10,8 +10,11 @@ import { FallbackPlanCard } from './components/FallbackPlanCard';
 import { UnderwriterView } from './components/UnderwriterView';
 import { ConsentModal } from './components/ConsentModal';
 import { DisputeModal } from './components/DisputeModal';
-import { Skeleton } from './components/primitives';
+import { ScoreTrendChart } from './components/ScoreTrendChart';
+import { DevicePrivacySection } from './components/DevicePrivacySection';
+import { Skeleton, Alert, Button } from './components/primitives';
 import { ShieldCheck } from 'lucide-react';
+import { PROTOTYPE_PRIVACY_SHORT } from './data/privacyCopy';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('policy'); // 'policy' | 'trips' | 'underwriter'
@@ -22,63 +25,76 @@ export default function App() {
   const [disputeTrip, setDisputeTrip] = useState(null);
   const [disputePasses, setDisputePasses] = useState(2);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [initialError, setInitialError] = useState(null);
+  const [lastVerifiedDate, setLastVerifiedDate] = useState('Sample baseline (no upload yet)');
 
-  // Live insurance & telemetry state
+  // Live insurance & telemetry state (null until real API data arrives)
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [metrics, setMetrics] = useState({
-    totalDistanceKm: 240,
-    nightDistanceKm: 15,
-    harshBrakeEvents: 0,
-    sharpTurnEvents: 0,
-    speedingKm: 10,
-  });
-  const [scoreData, setScoreData] = useState({
-    safetyScore: 94,
-    scoreGrade: 'Elite Safe Driver',
-  });
-  const [quote, setQuote] = useState({
-    basePremium: 100.0,
-    mileageDiscount: 7.0,
-    nightFactor: 10.0,
-    smoothBrakeReward: 16.0,
-    disputeCredit: 0.0,
-    finalPremium: 67.0,
-    totalSaved: 33.0,
-    discountPercentage: 33,
-    status: 'SYNCED',
-    receiptLines: [
-      { label: 'Standard Insurer Base Rate', amount: 100.0, type: 'base' },
-      { label: 'Low Mileage Reward (240 km)', amount: -7.0, type: 'discount' },
-      { label: 'Daytime Driving Bonus (Zero midnight hours)', amount: -10.0, type: 'discount' },
-      { label: 'SafeHabit Habit Reward (94 FairScore)', amount: -16.0, type: 'discount' },
-    ],
-  });
+  
+  // Actual driver baseline (for comparisons and reset)
+  const [actualMetrics, setActualMetrics] = useState(null);
+  const [actualQuote, setActualQuote] = useState(null);
+
+  // Simulated metrics and quote
+  const [metrics, setMetrics] = useState(null);
+  const [scoreData, setScoreData] = useState(null);
+  const [quote, setQuote] = useState(null);
 
   // Warm-up database & load initial status on app open
-  useEffect(() => {
-    async function initApp() {
-      try {
-        const healthRes = await fetch('/api/health');
-        const health = await healthRes.json();
-        setDbStatus(health.database);
-        if (health.database?.userDisputePasses !== undefined) {
-          setDisputePasses(health.database.userDisputePasses);
-        }
+  const initApp = async () => {
+    try {
+      setIsInitialLoading(true);
+      setInitialError(null);
 
-        const consentRes = await fetch('/api/privacy/consent');
+      const healthRes = await fetch('/api/health');
+      if (!healthRes.ok) throw new Error('Health check failed');
+      const health = await healthRes.json();
+      setDbStatus(health.database);
+      if (health.database?.userDisputePasses !== undefined) {
+        setDisputePasses(health.database.userDisputePasses);
+      }
+
+      const consentRes = await fetch('/api/privacy/consent');
+      if (consentRes.ok) {
         const consentData = await consentRes.json();
         if (consentData?.consent) setConsent(consentData.consent);
-
-        const summaryRes = await fetch('/api/trips/summary');
-        const summaryData = await summaryRes.json();
-        if (summaryData?.quote) setQuote(summaryData.quote);
-      } catch (err) {
-        console.warn('Initial load using offline in-memory fallback:', err.message);
-      } finally {
-        setIsInitialLoading(false);
       }
+
+      const summaryRes = await fetch('/api/trips/summary');
+      if (!summaryRes.ok) throw new Error('Failed to load trip summary');
+      const summaryData = await summaryRes.json();
+      if (summaryData?.quote) {
+        setQuote(summaryData.quote);
+        setActualQuote(summaryData.quote);
+      }
+      if (summaryData?.summary) {
+        setMetrics(summaryData.summary);
+        setActualMetrics(summaryData.summary);
+      }
+      if (summaryData?.scoreData) {
+        setScoreData(summaryData.scoreData);
+      } else if (summaryData?.summary?.safetyScore) {
+        setScoreData({
+          safetyScore: summaryData.summary.safetyScore,
+          scoreGrade: summaryData.summary.safetyScore >= 90 ? 'Elite Safe Driver' : 'Careful Driver',
+        });
+      }
+      if (summaryData?.summary?.createdAt) {
+        const d = new Date(summaryData.summary.createdAt);
+        setLastVerifiedDate(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      } else {
+        setLastVerifiedDate('Sample baseline (no upload yet)');
+      }
+    } catch (err) {
+      console.warn('Initial load error:', err.message);
+      setInitialError('Unable to connect to the pricing and telemetry service. Please ensure the local server is running.');
+    } finally {
+      setIsInitialLoading(false);
     }
+  };
+
+  useEffect(() => {
     initApp();
   }, []);
 
@@ -94,9 +110,22 @@ export default function App() {
       const data = await res.json();
       setLastResult(data);
 
-      if (data.metrics) setMetrics(data.metrics);
-      if (data.scoreData) setScoreData(data.scoreData);
-      if (data.quote) setQuote(data.quote);
+      const isRejected = data.tamperResult?.status === 'SIGNATURE_MISMATCH' || data.tamperResult?.isValid === false;
+
+      // Trust Rule (Phase 3 Task 1): Tampered file must NEVER update hero, receipt, trend chart or policy summary.
+      // Retain last verified state.
+      if (!isRejected) {
+        if (data.metrics) {
+          setMetrics(data.metrics);
+          setActualMetrics(data.metrics);
+        }
+        if (data.scoreData) setScoreData(data.scoreData);
+        if (data.quote) {
+          setQuote(data.quote);
+          setActualQuote(data.quote);
+        }
+        setLastVerifiedDate(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -179,7 +208,20 @@ export default function App() {
 
       {/* Main Content Container (12-column grid, max width 1200px) */}
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-12">
-        {isInitialLoading ? (
+        {initialError && !actualQuote ? (
+          <div className="py-16 max-w-lg mx-auto space-y-4 text-center">
+            <Alert variant="danger" title="Service connection unavailable">
+              {initialError}
+            </Alert>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={initApp}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : isInitialLoading || !actualQuote ? (
           <div className="space-y-6">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-56 w-full" />
@@ -196,7 +238,7 @@ export default function App() {
               vehicle="2022 Honda City VTEC • Licensed 6 Years • Metropolis Zone"
               tier={consent.tier === 'TIER_A' ? 'Tier A' : consent.tier === 'TIER_B' ? 'Tier B' : 'Tier C'}
               isFixed={consent.fallbackFixed}
-              quote={quote}
+              quote={actualQuote}
               disputePasses={disputePasses}
             />
 
@@ -204,15 +246,21 @@ export default function App() {
             <HeroFairScore
               score={scoreData.safetyScore}
               grade={scoreData.scoreGrade}
-              quote={quote}
-              metrics={metrics}
-              isSynced={quote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
+              quote={actualQuote}
+              metrics={actualMetrics}
+              isSynced={actualQuote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
             />
 
-            {/* 4. "How your price was calculated" (ExplainMyPremium printed receipt style) */}
+            {/* 4. 6-Month Historical FairScore & Premium Trajectory (Phase 2B Task 5) */}
+            <ScoreTrendChart
+              currentScore={scoreData.safetyScore}
+              currentQuote={actualQuote}
+            />
+
+            {/* 5. "How your price was calculated" (ExplainMyPremium printed receipt style) */}
             <PricingReceipt
-              quote={quote}
-              isSynced={quote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
+              quote={actualQuote}
+              isSynced={actualQuote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
             />
 
             {/* 5. Trip Upload: Single calm dropzone with collapsible demo scenarios drawer */}
@@ -220,16 +268,23 @@ export default function App() {
               onProcessFile={handleProcessFile}
               isProcessing={isProcessing}
               lastResult={lastResult}
+              lastVerifiedDate={lastVerifiedDate}
             />
 
-            {/* 6. Risk Simulator: Secondary tool with live sticky cause-and-effect */}
+            {/* 6. Risk Simulator: Interactive tool with comparison vs actual price and top opportunity tip */}
             <TripSimulator
               onSimulate={handleSimulate}
               currentScore={scoreData.safetyScore}
               currentQuote={quote}
+              actualMetrics={actualMetrics}
+              actualQuote={actualQuote}
+              consent={consent}
             />
 
-            {/* 7. Fallback Fixed-Price Guarantee */}
+            {/* 7. What leaves your device (Phase 2A Task 3) */}
+            <DevicePrivacySection />
+
+            {/* 8. Fallback Fixed-Price Safety Net Plan */}
             <FallbackPlanCard
               isFixedActive={consent.fallbackFixed}
               onToggleFixed={() =>
@@ -245,7 +300,7 @@ export default function App() {
               vehicle="2022 Honda City VTEC • Licensed 6 Years • Metropolis Zone"
               tier={consent.tier === 'TIER_A' ? 'Tier A' : consent.tier === 'TIER_B' ? 'Tier B' : 'Tier C'}
               isFixed={consent.fallbackFixed}
-              quote={quote}
+              quote={actualQuote}
               disputePasses={disputePasses}
             />
 
@@ -260,6 +315,7 @@ export default function App() {
               onProcessFile={handleProcessFile}
               isProcessing={isProcessing}
               lastResult={lastResult}
+              lastVerifiedDate={lastVerifiedDate}
             />
           </>
         ) : (
@@ -285,8 +341,8 @@ export default function App() {
             <span className="text-ink-subtle">• Actuarial Usage-Based Insurance</span>
           </div>
 
-          <div className="text-ink-subtle text-center sm:text-right">
-            Deterministic rating math • On-device telemetry processing • Cryptographic tamper integrity
+          <div className="text-ink-subtle text-center sm:text-right max-w-md">
+            {PROTOTYPE_PRIVACY_SHORT}
           </div>
         </div>
       </footer>

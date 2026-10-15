@@ -22,7 +22,7 @@ export function Button({
   ...props
 }) {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium transition-colors duration-150 rounded-[6px] focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none';
+    'inline-flex items-center justify-center font-medium transition-colors duration-150 rounded-[6px] focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap';
 
   const sizeStyles = {
     sm: 'text-xs px-3 py-1.5 min-h-[36px] gap-1.5',
@@ -216,6 +216,7 @@ export function Slider({
   unit = '',
   onChange,
   hint,
+  caption, // Clearly styled single caption replacing awkward mid-text
   sublabel,
   className = '',
 }) {
@@ -234,7 +235,7 @@ export function Slider({
         </span>
       </div>
 
-      <div className="relative py-1">
+      <div className="relative py-1.5 px-0.5">
         <input
           type="range"
           min={min}
@@ -246,7 +247,7 @@ export function Slider({
           style={{
             background: `linear-gradient(to right, #1F3A34 0%, #1F3A34 ${pct}%, #E4DDD0 ${pct}%, #E4DDD0 100%)`,
           }}
-          className="w-full h-1.5 rounded-full appearance-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-surface-raised [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-brand [&::-webkit-slider-thumb]:shadow-soft [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110"
+          className="editorial-slider w-full h-1.5 rounded-full appearance-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-[18px] [&::-webkit-slider-thumb]:h-[18px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-surface-raised [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-brand [&::-webkit-slider-thumb]:shadow-soft [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-110 [&::-moz-range-thumb]:w-[18px] [&::-moz-range-thumb]:h-[18px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-surface-raised [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-brand"
         />
       </div>
 
@@ -256,6 +257,12 @@ export function Slider({
           {hint.mid && <span>{hint.mid}</span>}
           <span>{hint.right || `${max}${unit}`}</span>
         </div>
+      )}
+
+      {caption && (
+        <p className="text-[12px] text-ink-muted leading-relaxed pt-0.5">
+          {caption}
+        </p>
       )}
     </div>
   );

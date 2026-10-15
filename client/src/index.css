@@ -8,15 +8,18 @@
   --surface-raised: #FFFFFF;
   --ink: #1C1A17;
   --ink-muted: #5E5A52;
-  --ink-subtle: #8D887D;
+  /* Darkened --ink-subtle from #8D887D to #6F6A60 for WCAG AA (>= 4.5:1 on --surface and --bg) */
+  --ink-subtle: #6F6A60;
   --line: #E4DDD0;
   --line-dark: #D3C9B8;
   --brand: #1F3A34;
   --brand-hover: #162B26;
-  --accent: #B5833A;
+  /* Darkened --accent from #B5833A to #93631D for WCAG AA (>= 4.5:1 on --surface and --bg) */
+  --accent: #93631D;
   --positive: #2F6B4F;
   --positive-tint: rgba(47, 107, 79, 0.08);
-  --warning: #A8661F;
+  /* Darkened --warning from #A8661F to #945511 for WCAG AA (>= 4.5:1 on --warning-tint) */
+  --warning: #945511;
   --warning-tint: rgba(168, 102, 31, 0.08);
   --danger: #9B3B30;
   --danger-tint: rgba(155, 59, 48, 0.08);
@@ -100,4 +103,119 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--ink-subtle);
 }
+
+/* Accessible Range Slider Thumbs (Phase 1 Polish) */
+input[type='range'].editorial-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+}
+
+input[type='range'].editorial-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  /* 2px visible brand border and white fill */
+  background-color: var(--surface-raised);
+  border: 2px solid var(--brand);
+  box-shadow: 0 1px 3px rgba(28, 26, 23, 0.16);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type='range'].editorial-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+input[type='range'].editorial-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+input[type='range'].editorial-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--surface-raised);
+  border: 2px solid var(--brand);
+  box-shadow: 0 1px 3px rgba(28, 26, 23, 0.16);
+  cursor: pointer;
+}
+
+input[type='range'].editorial-slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+   Actuarial Statement Print Stylesheet (Phase 3 Task 6)
+   Clean black-on-white printable statement with hairline rules and serif headings
+   ========================================================================== */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 13px !important;
+  }
+
+  /* Hide interactive, navigation, and simulator chrome */
+  header,
+  nav,
+  footer,
+  button,
+  .print\:hidden,
+  section[aria-label="Upload car trip log"],
+  section[aria-label="Trip Simulator"],
+  section[aria-label="What leaves your device"],
+  #what-leaves-your-device,
+  section[aria-label="Recent Driving Sessions"],
+  section[aria-label="Fixed-price fairness plan"],
+  .fixed-safety-net-section {
+    display: none !important;
+  }
+
+  /* Full width unboxed statement layout */
+  main {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Convert all background tints to clean white/transparent */
+  .bg-bg,
+  .bg-surface,
+  .bg-surface-raised,
+  .bg-brand-light {
+    background-color: transparent !important;
+  }
+
+  /* Crisp hairline borders and high contrast print typography */
+  .border-line,
+  .border-b,
+  .border-t,
+  .border {
+    border-color: #222222 !important;
+  }
+
+  .text-brand,
+  .text-ink,
+  .text-ink-muted,
+  .text-ink-subtle {
+    color: #000000 !important;
+  }
+
+  .font-serif {
+    font-family: 'Newsreader', Georgia, serif !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+    size: portrait;
+  }
+}
+
 

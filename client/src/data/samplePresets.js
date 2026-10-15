@@ -54,7 +54,7 @@ export const SAMPLE_PRESETS = [
     name: '04. Unmonitored Odometer Gap',
     badge: 'Odometer Gap Alert',
     color: 'blue',
-    description: '180 km driven while device was unplugged. Platform flags for friendly review rather than accusing.',
+    description: 'A large stretch with no data driven while device was unplugged. Platform flags for friendly review rather than accusing.',
     expectedScore: 84,
     expectedDiscount: 'Needs Review',
     tamperStatus: 'ODOMETER_GAP',
