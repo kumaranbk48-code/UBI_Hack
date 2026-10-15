@@ -1,0 +1,113 @@
+// Prisma Schema for SafeDrive IQ
+// Privacy-First Usage-Based Insurance Platform
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. User Account
+model User {
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  age             Int              @default(28)
+  yearsDriving    Int              @default(6)
+  city            String           @default("Metropolis")
+  disputePasses   Int              @default(2) // 2 free passes per year
+  consentSettings ConsentSettings?
+  vehicles        Vehicle[]
+  tripSummaries   TripSummary[]
+  quotes          PremiumQuote[]
+  disputes        Dispute[]
+  createdAt       DateTime         @default(now())
+}
+
+// 2. Vehicle Profile
+model Vehicle {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  make          String   @default("Honda")
+  model         String   @default("City")
+  year          Int      @default(2022)
+  safetyRating  Int      @default(5) // 1 to 5 stars
+  lastOdometer  Float    @default(12450.0)
+  createdAt     DateTime @default(now())
+}
+
+// 3. Privacy & Consent Tiers
+model ConsentSettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier            String   @default("TIER_C") // TIER_A (Mileage), TIER_B (Night), TIER_C (Full Habits)
+  autoDeleteDays  Int      @default(30)       // Auto-delete stored details after 30 days
+  fallbackFixed   Boolean  @default(false)    // Opt into fixed-rate fallback if roads are bad
+  updatedAt       DateTime @updatedAt
+}
+
+// 4. Trip Summary (Aggregated Insurer Record - NO raw second-by-second data stored)
+model TripSummary {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthYear        String    // e.g. "2026-10"
+  totalDistanceKm  Float
+  nightDistanceKm  Float     // 12 AM to 4 AM
+  harshBrakeEvents Int
+  sharpTurnEvents  Int
+  speedingKm       Float
+  safetyScore      Int       // 0 to 100
+  confidenceBadge  String    // "HIGH", "MEDIUM", "LOW"
+  tamperStatus     String    // "VERIFIED", "SIGNATURE_MISMATCH", "ODOMETER_GAP"
+  disputes         Dispute[]
+  createdAt        DateTime  @default(now())
+}
+
+// 5. Itemized Premium Quote
+model PremiumQuote {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthYear         String
+  basePremium       Float    // e.g. $100.00
+  mileageDiscount   Float    @default(0.0)
+  nightFactor       Float    @default(0.0)
+  smoothBrakeReward Float    @default(0.0)
+  disputeCredit     Float    @default(0.0)
+  finalPremium      Float
+  status            String   @default("SYNCED") // "SYNCED", "DEFAULT_APPLIED" (if skipped sync)
+  createdAt         DateTime @default(now())
+}
+
+// 6. Driver Dispute Record
+model Dispute {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripSummaryId       String
+  tripSummary         TripSummary     @relation(fields: [tripSummaryId], references: [id], onDelete: Cascade)
+  reason              String          // "PASSENGER_CAB", "ANIMAL_EMERGENCY", "POTHOLE_SPIKE", "OTHER"
+  explanation         String
+  attachedTripOnly    Json?           // ONLY this single trip's raw telemetry attached for evidence
+  status              String          @default("UNDER_REVIEW") // "AUTO_RESOLVED", "UNDER_REVIEW", "APPROVED", "REJECTED"
+  reviewDecision      ReviewDecision?
+  createdAt           DateTime        @default(now())
+}
+
+// 7. Underwriter Review Decision
+model ReviewDecision {
+  id          String   @id @default(uuid())
+  disputeId   String   @unique
+  dispute     Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  reviewer    String   @default("Senior Underwriter")
+  decision    String   // "APPROVED", "REJECTED"
+  creditGiven Float    @default(0.0)
+  notes       String
+  reviewedAt  DateTime @default(now())
+}
