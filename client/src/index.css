@@ -2,51 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #F6F2EA;
+  --surface: #FBF9F4;
+  --surface-raised: #FFFFFF;
+  --ink: #1C1A17;
+  --ink-muted: #5E5A52;
+  --ink-subtle: #8D887D;
+  --line: #E4DDD0;
+  --line-dark: #D3C9B8;
+  --brand: #1F3A34;
+  --brand-hover: #162B26;
+  --accent: #B5833A;
+  --positive: #2F6B4F;
+  --positive-tint: rgba(47, 107, 79, 0.08);
+  --warning: #A8661F;
+  --warning-tint: rgba(168, 102, 31, 0.08);
+  --danger: #9B3B30;
+  --danger-tint: rgba(155, 59, 48, 0.08);
+  --info: #3A5A78;
+  --info-tint: rgba(58, 90, 120, 0.08);
+
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
 @layer base {
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #0A0F1D;
-    color: #F1F5F9;
-    overflow-x: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Newsreader', 'Fraunces', Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+
+  /* Accessible focus indicators */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 }
 
-/* Glassmorphism Panels */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+/* Tabular figures for numbers, rates, and timestamps */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-.glass-card {
-  background: rgba(22, 31, 48, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+/* Warm neutral skeleton shimmer */
+@keyframes warm-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.glass-card-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.glass-card-hover:hover {
-  transform: translateY(-2px);
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.15);
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #EFEAE0 25%,
+    #F6F2EA 50%,
+    #EFEAE0 75%
+  );
+  background-size: 200% 100%;
+  animation: warm-shimmer 1.8s ease-in-out infinite;
 }
 
-/* Custom Scrollbar */
+/* Subtle transitions with prefers-reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Minimal Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0A0F1D;
+  background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1F293D;
-  border-radius: 4px;
+  background: var(--line-dark);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--ink-subtle);
 }
+

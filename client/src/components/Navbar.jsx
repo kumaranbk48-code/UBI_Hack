@@ -1,92 +1,208 @@
-import React from 'react';
-import { Shield, Car, Database, UserCheck, Settings, AlertTriangle, Cpu } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Shield, ShieldCheck, Database, Sliders, ChevronDown, Check, ExternalLink } from 'lucide-react';
 
 export function Navbar({
-  activeRole,
-  setActiveRole,
+  activeTab = 'policy', // 'policy' | 'trips' | 'underwriter'
+  setActiveTab,
   dbStatus,
   consent,
   onOpenConsentModal,
   disputePasses = 2,
 }) {
+  const [isPrivacyPopoverOpen, setIsPrivacyPopoverOpen] = useState(false);
+  const popoverRef = useRef(null);
+
   const isPostgres = dbStatus?.mode === 'POSTGRES_NEON';
 
+  // Close popover when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setIsPrivacyPopoverOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#0A0F1D]/80 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-[1px] flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <div className="h-full w-full bg-slate-950 rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5 text-emerald-400" />
+    <header className="sticky top-0 z-40 w-full bg-surface border-b border-line shadow-soft">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Brand Wordmark */}
+        <div className="flex items-center space-x-6 sm:space-x-8">
+          <a
+            href="#top"
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveTab('policy');
+            }}
+            className="flex items-center gap-2 group text-decoration-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand rounded-[4px]"
+          >
+            <div className="w-7 h-7 rounded-[5px] bg-brand text-surface-raised flex items-center justify-center font-serif text-sm font-semibold tracking-tight">
+              S
             </div>
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                SafeDrive <span className="text-emerald-400">IQ</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-serif text-xl sm:text-2xl font-normal text-ink tracking-tight">
+                SafeDrive
               </span>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <Cpu className="w-2.5 h-2.5" /> Edge Privacy
+              <span className="font-serif italic text-base text-accent font-normal">
+                IQ
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              Privacy-First Usage-Based Insurance • Hackathon PS-008
-            </p>
-          </div>
+          </a>
+
+          {/* Clean Navigation Underlined Tabs */}
+          <nav className="hidden sm:flex items-center space-x-1" aria-label="Main Navigation">
+            <button
+              onClick={() => setActiveTab('policy')}
+              className={`px-3 py-4 text-[14px] font-medium transition-colors relative focus-visible:outline-none ${
+                activeTab === 'policy'
+                  ? 'text-brand font-semibold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              My policy
+              {activeTab === 'policy' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('trips')}
+              className={`px-3 py-4 text-[14px] font-medium transition-colors relative focus-visible:outline-none ${
+                activeTab === 'trips'
+                  ? 'text-brand font-semibold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Trips & Disputes
+              {activeTab === 'trips' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('underwriter')}
+              className={`px-3 py-4 text-[14px] font-medium transition-colors relative focus-visible:outline-none ${
+                activeTab === 'underwriter'
+                  ? 'text-brand font-semibold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Underwriter review
+              {activeTab === 'underwriter' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand" />
+              )}
+            </button>
+          </nav>
         </div>
 
-        {/* Center / Right status & controls */}
+        {/* Right Controls: Unobtrusive Privacy Popover & Settings */}
         <div className="flex items-center space-x-3">
-          {/* Database / Reliability indicator */}
-          <div
-            title={dbStatus?.message || 'Database status'}
-            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${
-              isPostgres
-                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-            }`}
-          >
-            <Database className="w-3.5 h-3.5 animate-pulse" />
-            <span>{isPostgres ? 'Neon Cloud DB' : 'Local In-Memory (Zero-Lag Mode)'}</span>
+          {/* Mobile Tab Switcher */}
+          <div className="sm:hidden flex items-center bg-bg rounded-[6px] p-0.5 border border-line text-xs">
+            <button
+              onClick={() => setActiveTab('policy')}
+              className={`px-2.5 py-1 rounded-[4px] font-medium ${activeTab === 'policy' ? 'bg-surface-raised text-brand shadow-soft' : 'text-ink-muted'}`}
+            >
+              Policy
+            </button>
+            <button
+              onClick={() => setActiveTab('trips')}
+              className={`px-2.5 py-1 rounded-[4px] font-medium ${activeTab === 'trips' ? 'bg-surface-raised text-brand shadow-soft' : 'text-ink-muted'}`}
+            >
+              Trips
+            </button>
+            <button
+              onClick={() => setActiveTab('underwriter')}
+              className={`px-2.5 py-1 rounded-[4px] font-medium ${activeTab === 'underwriter' ? 'bg-surface-raised text-brand shadow-soft' : 'text-ink-muted'}`}
+            >
+              Audit
+            </button>
           </div>
 
-          {/* PrivacyShield Tier Button */}
-          <button
-            onClick={onOpenConsentModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/60 transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline">PrivacyShield:</span>
-            <span className="font-semibold text-emerald-400">
-              {consent?.fallbackFixed ? 'Fixed Plan' : consent?.tier || 'Tier C'}
-            </span>
-          </button>
+          {/* Discreet Privacy Indicator with Editorial Popover */}
+          <div className="relative" ref={popoverRef}>
+            <button
+              onClick={() => setIsPrivacyPopoverOpen(!isPrivacyPopoverOpen)}
+              aria-expanded={isPrivacyPopoverOpen}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] text-[13px] font-medium text-ink-muted hover:text-ink bg-surface-raised hover:bg-bg border border-line transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-brand stroke-[1.75]" />
+              <span className="hidden md:inline">On-device privacy</span>
+              <span className="md:hidden">Privacy</span>
+              <ChevronDown className="w-3 h-3 text-ink-subtle stroke-[1.5]" />
+            </button>
 
-          {/* Role Switcher for Hackathon Judges */}
-          <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center">
-            <button
-              onClick={() => setActiveRole('driver')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                activeRole === 'driver'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Car className="w-3.5 h-3.5" />
-              <span>Driver</span>
-            </button>
-            <button
-              onClick={() => setActiveRole('underwriter')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                activeRole === 'underwriter'
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Underwriter Review</span>
-            </button>
+            {/* Privacy Architecture Popover */}
+            {isPrivacyPopoverOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-[8px] bg-surface-raised border border-line p-5 shadow-popover z-50 animate-fadeIn">
+                <div className="flex items-start justify-between pb-3 border-b border-line">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink font-serif">
+                      Privacy & Data Architecture
+                    </h3>
+                    <p className="text-[12px] text-ink-muted mt-0.5">
+                      How SafeDrive IQ protects your personal telemetry
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-[4px] bg-brand-light text-brand">
+                    Active
+                  </span>
+                </div>
+
+                <div className="py-3 space-y-2.5 text-[12px] text-ink-muted border-b border-line">
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
+                    <span>
+                      <strong className="text-ink font-medium">On-Device Edge Computation:</strong> Raw GPS coordinates and instantaneous accelerometer reads never leave your local device.
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
+                    <span>
+                      <strong className="text-ink font-medium">Data Minimization:</strong> Insurer receives only verifiable actuarial aggregates (distance, night proportion, gentle stops).
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Check className="w-3.5 h-3.5 text-status-positive shrink-0 mt-0.5" />
+                    <span>
+                      <strong className="text-ink font-medium">Retention Policy:</strong> Trip aggregates automatically purge from insurer ledger after {consent?.autoDeleteDays || 30} days.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Technical System Details Moved from Header */}
+                <div className="py-3 space-y-1.5 text-[11px] text-ink-subtle bg-bg -mx-5 px-5 my-1">
+                  <div className="flex justify-between">
+                    <span>Engine Mode:</span>
+                    <span className="text-ink font-medium">
+                      {isPostgres ? 'Neon Cloud PostgreSQL' : 'Local In-Memory Engine'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Policy Tier:</span>
+                    <span className="text-ink font-medium">
+                      {consent?.fallbackFixed ? 'Fixed Plan ($85)' : consent?.tier || 'Tier C (Habits)'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Audit Status:</span>
+                    <span className="text-status-positive font-medium">HMAC-SHA256 Signed</span>
+                  </div>
+                </div>
+
+                <div className="pt-3">
+                  <button
+                    onClick={() => {
+                      setIsPrivacyPopoverOpen(false);
+                      onOpenConsentModal();
+                    }}
+                    className="w-full text-center py-2 px-3 rounded-[6px] text-xs font-medium text-brand hover:text-brand-hover bg-brand-light hover:bg-line transition-colors"
+                  >
+                    Manage Consent & Retention Settings
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { ConsentModal } from './components/ConsentModal';
-import { FileUploader } from './components/FileUploader';
-import { SafetyGauge } from './components/SafetyGauge';
+import { PolicyHeader } from './components/PolicyHeader';
+import { HeroFairScore } from './components/HeroFairScore';
 import { PricingReceipt } from './components/PricingReceipt';
+import { FileUploader } from './components/FileUploader';
 import { TripSimulator } from './components/TripSimulator';
 import { TripList } from './components/TripList';
-import { DisputeModal } from './components/DisputeModal';
-import { UnderwriterView } from './components/UnderwriterView';
 import { FallbackPlanCard } from './components/FallbackPlanCard';
-import { WhatIfSlider } from './components/WhatIfSlider';
-import { ShieldCheck, Info, Car, Award, Sparkles } from 'lucide-react';
+import { UnderwriterView } from './components/UnderwriterView';
+import { ConsentModal } from './components/ConsentModal';
+import { DisputeModal } from './components/DisputeModal';
+import { Skeleton } from './components/primitives';
+import { ShieldCheck } from 'lucide-react';
 
 export default function App() {
-  const [activeRole, setActiveRole] = useState('driver'); // 'driver' or 'underwriter'
+  const [activeTab, setActiveTab] = useState('policy'); // 'policy' | 'trips' | 'underwriter'
   const [dbStatus, setDbStatus] = useState(null);
   const [consent, setConsent] = useState({ tier: 'TIER_C', autoDeleteDays: 30, fallbackFixed: false });
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
   const [disputeTrip, setDisputeTrip] = useState(null);
   const [disputePasses, setDisputePasses] = useState(2);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Live insurance & telemetry state
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,7 +35,7 @@ export default function App() {
   });
   const [scoreData, setScoreData] = useState({
     safetyScore: 94,
-    scoreGrade: 'Elite Safe Driver ⭐⭐⭐⭐⭐',
+    scoreGrade: 'Elite Safe Driver',
   });
   const [quote, setQuote] = useState({
     basePremium: 100.0,
@@ -46,10 +48,10 @@ export default function App() {
     discountPercentage: 33,
     status: 'SYNCED',
     receiptLines: [
-      { label: 'Standard Insurer Base Premium', amount: 100.0, type: 'base' },
+      { label: 'Standard Insurer Base Rate', amount: 100.0, type: 'base' },
       { label: 'Low Mileage Reward (240 km)', amount: -7.0, type: 'discount' },
-      { label: 'Safe Daytime Driving Bonus', amount: -10.0, type: 'discount' },
-      { label: 'SafeScore Habit Reward (94/100)', amount: -16.0, type: 'discount' },
+      { label: 'Daytime Driving Bonus (Zero midnight hours)', amount: -10.0, type: 'discount' },
+      { label: 'SafeHabit Habit Reward (94 FairScore)', amount: -16.0, type: 'discount' },
     ],
   });
 
@@ -73,6 +75,8 @@ export default function App() {
         if (summaryData?.quote) setQuote(summaryData.quote);
       } catch (err) {
         console.warn('Initial load using offline in-memory fallback:', err.message);
+      } finally {
+        setIsInitialLoading(false);
       }
     }
     initApp();
@@ -132,7 +136,6 @@ export default function App() {
       const data = await res.json();
       if (data.consent) {
         setConsent(data.consent);
-        // Recalculate quote with new tier
         handleSimulate(metrics);
       }
     } catch (err) {
@@ -152,7 +155,6 @@ export default function App() {
       if (data.passesRemaining !== undefined) {
         setDisputePasses(data.passesRemaining);
       }
-      // Refresh current quote
       const summaryRes = await fetch('/api/trips/summary');
       const summaryData = await summaryRes.json();
       if (summaryData?.quote) setQuote(summaryData.quote);
@@ -164,84 +166,89 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F1D] text-slate-100 flex flex-col font-sans">
-      {/* Top Navigation */}
+    <div className="min-h-screen bg-bg text-ink flex flex-col font-sans selection:bg-brand-light selection:text-brand">
+      {/* 1. Top Bar */}
       <Navbar
-        activeRole={activeRole}
-        setActiveRole={setActiveRole}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         dbStatus={dbStatus}
         consent={consent}
         onOpenConsentModal={() => setIsConsentModalOpen(true)}
         disputePasses={disputePasses}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {activeRole === 'driver' ? (
-          <>
-            {/* Hero Driver Profile Banner */}
-            <div className="rounded-2xl glass-panel p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-500 p-[1px] flex items-center justify-center shrink-0">
-                  <div className="h-full w-full bg-slate-950 rounded-2xl flex items-center justify-center">
-                    <Car className="w-7 h-7 text-emerald-400" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-extrabold text-white">Alex Mercer</h1>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Tier C Policy Active
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    2022 Honda City VTEC • Licensed 6 Years • Metropolis Zone
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick Summary Badges */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                <div className="px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Base Premium</span>
-                  <span className="font-extrabold text-white">$100.00/mo</span>
-                </div>
-                <div className="px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Your Price</span>
-                  <span className="font-extrabold text-emerald-400">${quote.finalPremium?.toFixed(2)}</span>
-                </div>
-                <div className="px-3 py-2 rounded-xl bg-slate-950/60 border border-slate-800 text-xs">
-                  <span className="text-slate-400 block text-[10px] uppercase font-semibold">Free Passes Left</span>
-                  <span className="font-extrabold text-cyan-400">{disputePasses} of 2</span>
-                </div>
-              </div>
+      {/* Main Content Container (12-column grid, max width 1200px) */}
+      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-12">
+        {isInitialLoading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-56 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Skeleton className="h-80 w-full" />
+              <Skeleton className="h-80 w-full" />
             </div>
+          </div>
+        ) : activeTab === 'policy' ? (
+          <>
+            {/* 2. Policy Header: Clean horizontal definition list */}
+            <PolicyHeader
+              driverName="Alex Mercer"
+              vehicle="2022 Honda City VTEC • Licensed 6 Years • Metropolis Zone"
+              tier={consent.tier === 'TIER_A' ? 'Tier A' : consent.tier === 'TIER_B' ? 'Tier B' : 'Tier C'}
+              isFixed={consent.fallbackFixed}
+              quote={quote}
+              disputePasses={disputePasses}
+            />
 
-            {/* 1. Pen Drive CSV Uploader (The Simulated Logger Flow) */}
+            {/* 3. Hero: Monthly FairScore & Month's Premium side-by-side in one wide panel */}
+            <HeroFairScore
+              score={scoreData.safetyScore}
+              grade={scoreData.scoreGrade}
+              quote={quote}
+              metrics={metrics}
+              isSynced={quote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
+            />
+
+            {/* 4. "How your price was calculated" (ExplainMyPremium printed receipt style) */}
+            <PricingReceipt
+              quote={quote}
+              isSynced={quote.status !== 'DEFAULT_APPLIED (Unsynced Month)'}
+            />
+
+            {/* 5. Trip Upload: Single calm dropzone with collapsible demo scenarios drawer */}
             <FileUploader
               onProcessFile={handleProcessFile}
               isProcessing={isProcessing}
               lastResult={lastResult}
             />
 
-            {/* 2. Interactive Trip Simulator */}
-            <TripSimulator onSimulate={handleSimulate} />
+            {/* 6. Risk Simulator: Secondary tool with live sticky cause-and-effect */}
+            <TripSimulator
+              onSimulate={handleSimulate}
+              currentScore={scoreData.safetyScore}
+              currentQuote={quote}
+            />
 
-            {/* 3. Safety Score Gauge & ExplainMyPremium Receipt */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <SafetyGauge
-                score={scoreData.safetyScore}
-                grade={scoreData.scoreGrade}
-                metrics={metrics}
-                qualityInfo={lastResult?.qualityResult}
-              />
-              <PricingReceipt quote={quote} isSynced={quote.status !== 'DEFAULT_APPLIED (Unsynced Month)'} />
-            </div>
+            {/* 7. Fallback Fixed-Price Guarantee */}
+            <FallbackPlanCard
+              isFixedActive={consent.fallbackFixed}
+              onToggleFixed={() =>
+                handleSaveConsent({ ...consent, fallbackFixed: !consent.fallbackFixed })
+              }
+            />
+          </>
+        ) : activeTab === 'trips' ? (
+          <>
+            {/* Trips & Disputes View */}
+            <PolicyHeader
+              driverName="Alex Mercer"
+              vehicle="2022 Honda City VTEC • Licensed 6 Years • Metropolis Zone"
+              tier={consent.tier === 'TIER_A' ? 'Tier A' : consent.tier === 'TIER_B' ? 'Tier B' : 'Tier C'}
+              isFixed={consent.fallbackFixed}
+              quote={quote}
+              disputePasses={disputePasses}
+            />
 
-            {/* 4. What-If Savings Predictor */}
-            <WhatIfSlider currentMetrics={metrics} />
-
-            {/* 5. Recent Trips & Dispute Launcher */}
             <TripList
               onOpenDispute={(trip) => {
                 setDisputeTrip(trip);
@@ -249,14 +256,14 @@ export default function App() {
               }}
             />
 
-            {/* 6. Fallback Fixed-Price Plan Option */}
-            <FallbackPlanCard
-              isFixedActive={consent.fallbackFixed}
-              onToggleFixed={() => handleSaveConsent({ ...consent, fallbackFixed: !consent.fallbackFixed })}
+            <FileUploader
+              onProcessFile={handleProcessFile}
+              isProcessing={isProcessing}
+              lastResult={lastResult}
             />
           </>
         ) : (
-          /* Underwriter View for Hackathon Judges */
+          /* 8. Underwriter Review view: Professional data workspace */
           <UnderwriterView
             onDisputeReviewed={async () => {
               const summaryRes = await fetch('/api/trips/summary');
@@ -267,15 +274,19 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-6 mt-12 bg-slate-950/60 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-slate-400 font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>SafeDrive IQ • Built for Hackathon PS-008 (Usage-Based Insurance)</span>
+      {/* Editorial Footer */}
+      <footer className="border-t border-line py-8 mt-16 bg-surface text-xs text-ink-muted">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-ink font-medium">
+            <div className="w-5 h-5 rounded-[4px] bg-brand text-surface-raised flex items-center justify-center font-serif text-xs font-semibold">
+              S
+            </div>
+            <span className="font-serif text-sm">SafeDrive IQ</span>
+            <span className="text-ink-subtle">• Actuarial Usage-Based Insurance</span>
           </div>
-          <div>
-            100% Offline Edge Telematics • Zero Trained Black-Box Models • Cryptographic Tamper Verification
+
+          <div className="text-ink-subtle text-center sm:text-right">
+            Deterministic rating math • On-device telemetry processing • Cryptographic tamper integrity
           </div>
         </div>
       </footer>

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Sliders, Play, RotateCcw, Zap, Clock, Gauge, Car } from 'lucide-react';
+import { Sliders, RotateCcw, TrendingUp, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { Slider } from './primitives';
 
-export function TripSimulator({ onSimulate, isSimulating }) {
+export function TripSimulator({ onSimulate, currentScore = 94, currentQuote }) {
   const [distance, setDistance] = useState(240);
   const [nightKm, setNightKm] = useState(15);
   const [harshBrakes, setHarshBrakes] = useState(0);
   const [speedingKm, setSpeedingKm] = useState(10);
+  const [activeScenario, setActiveScenario] = useState('custom');
 
-  const handleApply = (d = distance, n = nightKm, b = harshBrakes, s = speedingKm) => {
+  const handleApply = (d, n, b, s) => {
     onSimulate({
       totalDistanceKm: Number(d),
       nightDistanceKm: Number(n),
@@ -17,184 +19,197 @@ export function TripSimulator({ onSimulate, isSimulating }) {
     });
   };
 
-  const setPreset = (presetName) => {
-    if (presetName === 'smooth') {
-      setDistance(200);
-      setNightKm(5);
-      setHarshBrakes(0);
-      setSpeedingKm(0);
-      handleApply(200, 5, 0, 0);
-    } else if (presetName === 'rush_hour') {
-      setDistance(350);
-      setNightKm(20);
-      setHarshBrakes(2);
-      setSpeedingKm(15);
-      handleApply(350, 20, 2, 15);
-    } else if (presetName === 'aggressive_night') {
-      setDistance(150);
-      setNightKm(80);
-      setHarshBrakes(5);
-      setSpeedingKm(60);
-      handleApply(150, 80, 5, 60);
+  const handleScenarioChange = (scenarioId) => {
+    setActiveScenario(scenarioId);
+    let d = distance, n = nightKm, b = harshBrakes, s = speedingKm;
+
+    if (scenarioId === 'smooth') {
+      d = 200; n = 5; b = 0; s = 0;
+    } else if (scenarioId === 'rush_hour') {
+      d = 350; n = 20; b = 2; s = 15;
+    } else if (scenarioId === 'night_driving') {
+      d = 180; n = 75; b = 4; s = 45;
     }
+    setDistance(d);
+    setNightKm(n);
+    setHarshBrakes(b);
+    setSpeedingKm(s);
+    handleApply(d, n, b, s);
   };
 
+  const finalPremium = currentQuote?.finalPremium || 67.0;
+  const totalSaved = currentQuote?.totalSaved !== undefined ? currentQuote.totalSaved : 33.0;
+  const basePremium = currentQuote?.basePremium || 100.0;
+
   return (
-    <div className="rounded-2xl glass-panel p-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <Sliders className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              Interactive Trip & Risk Simulator
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                Judge Sandbox
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Drag sliders or click quick test scenarios to watch the SafeScore and Premium recalculate at 60 FPS.
-            </p>
-          </div>
+    <section
+      aria-label="Risk simulator"
+      className="rounded-[10px] bg-surface border border-line p-6 sm:p-7 shadow-soft space-y-6"
+    >
+      {/* Header with Segmented Scenario Control */}
+      <div className="pb-4 border-b border-line flex flex-col md:flex-row md:items-baseline justify-between gap-4">
+        <div>
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
+            Actuarial Projection
+          </span>
+          <h2 className="text-xl font-serif font-normal text-ink">
+            Explore how your driving affects your price
+          </h2>
+          <p className="text-[13px] text-ink-muted mt-1 max-w-xl">
+            Simulate mileage and road habits to see real-time recalculations based on deterministic physics.
+          </p>
         </div>
 
-        {/* Quick Simulator Preset Buttons */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto">
+        {/* Clean Segmented Control for Quick Scenarios */}
+        <div className="flex items-center bg-bg rounded-[6px] p-0.5 border border-line text-xs self-start md:self-auto shrink-0">
           <button
-            onClick={() => setPreset('smooth')}
-            className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition"
+            type="button"
+            onClick={() => handleScenarioChange('smooth')}
+            className={`px-3 py-1.5 rounded-[4px] font-medium transition-colors ${
+              activeScenario === 'smooth'
+                ? 'bg-surface-raised text-brand shadow-soft font-semibold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
           >
-            🟢 Smooth
+            Smooth Commute
           </button>
           <button
-            onClick={() => setPreset('rush_hour')}
-            className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition"
+            type="button"
+            onClick={() => handleScenarioChange('rush_hour')}
+            className={`px-3 py-1.5 rounded-[4px] font-medium transition-colors ${
+              activeScenario === 'rush_hour'
+                ? 'bg-surface-raised text-brand shadow-soft font-semibold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
           >
-            🟡 Traffic
+            Urban Traffic
           </button>
           <button
-            onClick={() => setPreset('aggressive_night')}
-            className="px-2.5 py-1 text-xs rounded-lg font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+            type="button"
+            onClick={() => handleScenarioChange('night_driving')}
+            className={`px-3 py-1.5 rounded-[4px] font-medium transition-colors ${
+              activeScenario === 'night_driving'
+                ? 'bg-surface-raised text-brand shadow-soft font-semibold'
+                : 'text-ink-muted hover:text-ink'
+            }`}
           >
-            🔴 Late Night
+            Late Night
           </button>
         </div>
       </div>
 
-      {/* Sliders Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-5">
-        {/* Slider 1: Distance */}
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-semibold flex items-center gap-1">
-              <Car className="w-3.5 h-3.5 text-blue-400" /> Distance Driven
-            </span>
-            <span className="text-cyan-400 font-mono font-bold">{distance} km</span>
-          </div>
-          <input
-            type="range"
-            min="20"
-            max="1200"
-            step="10"
+      {/* Main Grid: Sliders on Left, Live Sticky Outcome Panel on Right */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Sliders Column */}
+        <div className="lg:col-span-7 space-y-6">
+          <Slider
+            label="Distance Driven"
+            sublabel="(monthly volume)"
             value={distance}
-            onChange={(e) => {
-              const val = Number(e.target.value);
+            min={20}
+            max={1200}
+            step={10}
+            unit=" km"
+            onChange={(val) => {
+              setActiveScenario('custom');
               setDistance(val);
               handleApply(val, nightKm, harshBrakes, speedingKm);
             }}
-            className="w-full accent-cyan-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+            hint={{ left: '20 km', mid: 'Low mileage benchmark < 500 km', right: '1,200 km' }}
           />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-            <span>20 km</span>
-            <span>Low mileage &lt;500km</span>
-            <span>1200 km</span>
-          </div>
-        </div>
 
-        {/* Slider 2: Night Driving */}
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-semibold flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-indigo-400" /> Night Driving (12-4 AM)
-            </span>
-            <span className="text-indigo-400 font-mono font-bold">{nightKm} km</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="200"
-            step="5"
+          <Slider
+            label="Night Driving"
+            sublabel="(12:00 AM – 4:00 AM window)"
             value={nightKm}
-            onChange={(e) => {
-              const val = Number(e.target.value);
+            min={0}
+            max={200}
+            step={5}
+            unit=" km"
+            onChange={(val) => {
+              setActiveScenario('custom');
               setNightKm(val);
               handleApply(distance, val, harshBrakes, speedingKm);
             }}
-            className="w-full accent-indigo-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+            hint={{ left: '0 km (Full Bonus)', mid: 'Elevated hazard window', right: '200 km' }}
           />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-            <span>0 km (Safe)</span>
-            <span>High Risk &gt;50km</span>
-          </div>
-        </div>
 
-        {/* Slider 3: Hard Brakes */}
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-semibold flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-amber-400" /> Hard Brakes (&gt;0.4g)
-            </span>
-            <span className="text-amber-400 font-mono font-bold">{harshBrakes} stops</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="12"
-            step="1"
+          <Slider
+            label="Harsh Braking Events"
+            sublabel="(> 0.4g sudden stops)"
             value={harshBrakes}
-            onChange={(e) => {
-              const val = Number(e.target.value);
+            min={0}
+            max={10}
+            step={1}
+            unit={harshBrakes === 1 ? ' stop' : ' stops'}
+            onChange={(val) => {
+              setActiveScenario('custom');
               setHarshBrakes(val);
               handleApply(distance, nightKm, val, speedingKm);
             }}
-            className="w-full accent-amber-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+            hint={{ left: '0 stops (100% Gentle)', mid: '1 free emergency pass included', right: '10 stops' }}
           />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-            <span>0 stops</span>
-            <span>1 free pass buffer</span>
-            <span>12 stops</span>
-          </div>
-        </div>
 
-        {/* Slider 4: Speeding */}
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-semibold flex items-center gap-1">
-              <Gauge className="w-3.5 h-3.5 text-rose-400" /> Over-Limit Speeding
-            </span>
-            <span className="text-rose-400 font-mono font-bold">{speedingKm} km</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="150"
-            step="5"
+          <Slider
+            label="Over-Limit Speeding"
+            sublabel="(exceeding posted limit by > 15 km/h)"
             value={speedingKm}
-            onChange={(e) => {
-              const val = Number(e.target.value);
+            min={0}
+            max={150}
+            step={5}
+            unit=" km"
+            onChange={(val) => {
+              setActiveScenario('custom');
               setSpeedingKm(val);
               handleApply(distance, nightKm, harshBrakes, val);
             }}
-            className="w-full accent-rose-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+            hint={{ left: '0 km (Safe)', right: '150 km' }}
           />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-            <span>0 km</span>
-            <span>&gt;75 km/h limit</span>
-            <span>150 km</span>
+        </div>
+
+        {/* Live Sticky Projected Quote & Score (Visible without scrolling) */}
+        <div className="lg:col-span-5 lg:sticky lg:top-24">
+          <div className="rounded-[8px] bg-surface-raised border border-line p-5 shadow-soft space-y-4">
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block">
+              Simulated Rate Impact
+            </span>
+
+            <div className="flex items-baseline justify-between border-b border-line pb-4">
+              <div>
+                <span className="text-[12px] text-ink-muted">Projected FairScore</span>
+                <div className="font-serif text-3xl font-normal text-brand tabular-nums mt-0.5">
+                  {currentScore}
+                  <span className="text-xs text-ink-subtle font-normal font-sans ml-1">/ 100</span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[12px] text-ink-muted">Projected Premium</span>
+                <div className="font-serif text-3xl font-normal text-ink tabular-nums mt-0.5">
+                  ${finalPremium.toFixed(2)}
+                  <span className="text-xs text-ink-muted font-normal font-sans ml-1">/ mo</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Restrained Savings Highlight */}
+            <div className="text-[13px] space-y-2">
+              <div className="flex justify-between text-ink-muted">
+                <span>Standard baseline rate:</span>
+                <span className="tabular-nums">${basePremium.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-medium text-brand">
+                <span>Projected monthly savings:</span>
+                <span className="tabular-nums">-${totalSaved.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-line text-[11px] text-ink-subtle leading-relaxed">
+              * Rates update deterministically with each slider adjustment. Real policy changes take effect on your 1st of the month statement.
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

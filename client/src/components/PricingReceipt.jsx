@@ -1,146 +1,195 @@
 import React, { useState } from 'react';
-import { Receipt, DollarSign, ArrowDown, HelpCircle, ChevronDown, ChevronUp, Sparkles, AlertCircle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ChevronDown, ChevronUp, FileText, ArrowDown, HelpCircle, Check, AlertCircle } from 'lucide-react';
+import { Alert } from './primitives';
 
 export function PricingReceipt({ quote, isSynced = true }) {
-  const [showFormula, setShowFormula] = useState(false);
+  const [isFormulaOpen, setIsFormulaOpen] = useState(true);
 
   const basePrice = quote?.basePremium || 100.0;
   const finalPrice = quote?.finalPremium || 100.0;
-  const totalSaved = quote?.totalSaved || Math.max(0, basePrice - finalPrice);
-  const discountPct = quote?.discountPercentage || Math.round((totalSaved / basePrice) * 100);
+  const totalSaved = quote?.totalSaved !== undefined ? quote.totalSaved : Math.max(0, basePrice - finalPrice);
+  const discountPct = quote?.discountPercentage || (basePrice > 0 ? Math.round((totalSaved / basePrice) * 100) : 0);
 
-  // Chart data comparing standard market price vs SafeDrive price
-  const chartData = [
-    { name: 'Standard Market Rate', amount: basePrice, color: '#64748B' },
-    { name: 'Your SafeDrive Rate', amount: finalPrice, color: '#10B981' },
+  // Line items from quote
+  const lines = quote?.receiptLines && quote.receiptLines.length > 0 ? quote.receiptLines : [
+    { label: 'Standard Insurer Base Rate', amount: 100.0, type: 'base' },
+    { label: 'Low Mileage Reward (240 km)', amount: -7.0, type: 'discount' },
+    { label: 'Daytime Driving Bonus (Zero midnight hours)', amount: -10.0, type: 'discount' },
+    { label: 'SafeHabit Smooth Braking Bonus (94 Score)', amount: -16.0, type: 'discount' },
   ];
 
   return (
-    <div className="rounded-2xl glass-panel p-6 shadow-xl flex flex-col justify-between">
-      <div>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Zero Black-Box Pricing
-            </span>
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <span>ExplainMyPremium™ Receipt</span>
-            </h3>
-          </div>
-          <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400">
-            <Receipt className="w-5 h-5" />
-          </div>
+    <section
+      aria-label="How your price was calculated"
+      className="rounded-[10px] bg-surface border border-line p-6 sm:p-7 shadow-soft"
+    >
+      {/* Section Header */}
+      <div className="pb-4 mb-5 border-b border-line flex items-baseline justify-between">
+        <div>
+          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
+            Actuarial Statement
+          </span>
+          <h2 className="text-xl font-serif font-normal text-ink">
+            How your price was calculated
+          </h2>
+        </div>
+        <span className="text-[12px] text-ink-subtle tabular-nums font-mono">
+          REF: #{new Date().getFullYear()}-UBI-0842
+        </span>
+      </div>
+
+      {/* Sync Reminder / Default Notice */}
+      {!isSynced && (
+        <div className="mb-5">
+          <Alert
+            variant="warning"
+            title="Unsynced Month Notice"
+          >
+            No vehicle trip log was uploaded for the current calendar cycle. Standard base rate applies with no habit discounts. Upload your CSV log below to calculate your savings.
+          </Alert>
+        </div>
+      )}
+
+      {/* Printed Invoice / Statement Style Receipt */}
+      <div className="rounded-[6px] bg-surface-raised border border-line p-5 sm:p-6 mb-5">
+        <div className="text-[11px] uppercase tracking-[0.08em] text-ink-subtle pb-3 border-b border-line font-medium flex justify-between">
+          <span>Coverage Item</span>
+          <span>Adjustment</span>
         </div>
 
-        {/* Sync Reminder / Default Notice */}
-        {!isSynced && (
-          <div className="my-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-            <div>
-              <span className="font-semibold">Sync Reminder:</span> No trip log uploaded for this month. The standard $100 price applies with zero discount. Upload your CSV above to unlock discounts!
-            </div>
-          </div>
-        )}
-
-        {/* Big Total Price Banner */}
-        <div className="my-4 p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800/80 flex items-center justify-between">
-          <div>
-            <div className="text-[11px] text-slate-400 uppercase font-semibold">Your Monthly Premium</div>
-            <div className="text-3xl font-extrabold text-white flex items-baseline gap-1 mt-0.5">
-              <span className="text-emerald-400">${finalPrice.toFixed(2)}</span>
-              <span className="text-xs text-slate-400 font-normal">/ month</span>
-            </div>
-          </div>
-
-          {totalSaved > 0 ? (
-            <div className="text-right">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                <ArrowDown className="w-3.5 h-3.5" /> Save {discountPct}%
-              </span>
-              <div className="text-[11px] text-emerald-400/80 font-medium mt-1">
-                ${totalSaved.toFixed(2)} total savings
-              </div>
-            </div>
-          ) : (
-            <div className="text-right text-xs text-slate-400">
-              Base Price Active
-            </div>
-          )}
-        </div>
-
-        {/* Itemized Line Items Table */}
-        <div className="space-y-2 my-4">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            Itemized Actuarial Breakdown:
-          </div>
-
-          {quote?.receiptLines && quote.receiptLines.length > 0 ? (
-            quote.receiptLines.map((line, idx) => (
+        {/* Itemized Lines */}
+        <div className="divide-y divide-line/60 py-1">
+          {lines.map((line, idx) => {
+            const isNegative = line.amount < 0;
+            const isSurcharge = line.amount > 0 && line.type === 'surcharge';
+            return (
               <div
                 key={idx}
-                className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-950/40 border border-slate-800/60"
+                className="py-2.5 flex items-center justify-between text-[13px] gap-4"
               >
-                <span className="text-slate-300 font-medium">{line.label}</span>
-                <span
-                  className={`font-mono font-bold ${
-                    line.amount < 0
-                      ? 'text-emerald-400'
-                      : line.amount > 0 && line.type === 'surcharge'
-                      ? 'text-rose-400'
-                      : 'text-slate-200'
-                  }`}
-                >
-                  {line.amount < 0 ? `-$${Math.abs(line.amount).toFixed(2)}` : line.amount > 0 && line.type === 'surcharge' ? `+$${line.amount.toFixed(2)}` : `$${line.amount.toFixed(2)}`}
-                </span>
+                <div className="text-ink">
+                  <span className="font-normal">{line.label}</span>
+                </div>
+                <div className="tabular-nums font-medium text-right shrink-0">
+                  {isNegative ? (
+                    <span className="text-status-positive">
+                      -${Math.abs(line.amount).toFixed(2)}
+                    </span>
+                  ) : isSurcharge ? (
+                    <span className="text-status-danger">
+                      +${line.amount.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-ink font-semibold">
+                      ${line.amount.toFixed(2)}
+                    </span>
+                  )}
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="text-xs text-slate-400 py-2">Standard base line items apply.</div>
-          )}
+            );
+          })}
         </div>
 
-        {/* Mini Recharts Comparison */}
-        <div className="h-24 w-full mt-3">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ left: 10, right: 20, top: 0, bottom: 0 }}>
-              <XAxis type="number" domain={[0, 120]} hide />
-              <YAxis dataKey="name" type="category" stroke="#94A3B8" fontSize={10} width={120} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: '#0F172A', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
-                formatter={(val) => [`$${val.toFixed(2)}`, 'Premium']}
-              />
-              <Bar dataKey="amount" radius={[0, 6, 6, 0]} barSize={12}>
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Subtotal / Total Calculation Rule */}
+        <div className="mt-2 pt-3 border-t-2 border-line space-y-1.5">
+          <div className="flex justify-between items-center text-[12px] text-ink-muted">
+            <span>Market Benchmark Subtotal</span>
+            <span className="tabular-nums">${basePrice.toFixed(2)}</span>
+          </div>
+          {totalSaved > 0 && (
+            <div className="flex justify-between items-center text-[12px] text-brand font-medium">
+              <span>Cumulative Safe Driving Credit</span>
+              <span className="tabular-nums">-${totalSaved.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="pt-2 border-t border-line flex justify-between items-baseline">
+            <div>
+              <span className="text-[14px] font-semibold text-ink">
+                Adjusted Monthly Premium
+              </span>
+              <span className="block text-[11px] text-ink-subtle">
+                Billed monthly • Fully deterministic
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="font-serif text-2xl font-normal text-brand tabular-nums">
+                ${finalPrice.toFixed(2)}
+              </span>
+              <span className="text-xs text-ink-muted font-normal ml-1">/ month</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Formula Transparency Accordion */}
-      <div className="pt-3 border-t border-slate-800/80 mt-2">
-        <button
-          onClick={() => setShowFormula(!showFormula)}
-          className="w-full flex items-center justify-between text-[11px] text-slate-400 hover:text-emerald-400 transition"
-        >
-          <span className="flex items-center gap-1 font-medium">
-            <HelpCircle className="w-3.5 h-3.5" /> How this formula was calculated
+      {/* Clean Single Comparison (Standard Rate vs. Your Rate) */}
+      <div className="rounded-[6px] border border-line bg-surface p-4 mb-5">
+        <div className="flex items-center justify-between text-[12px] mb-2">
+          <span className="text-ink-muted">Market rate comparison</span>
+          <span className="text-brand font-medium tabular-nums">
+            {discountPct}% lower than benchmark
           </span>
-          {showFormula ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </div>
+
+        {/* Proportional dual meter */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 text-[12px]">
+            <span className="w-28 text-ink-subtle shrink-0">Standard rate:</span>
+            <div className="flex-1 bg-line h-2 rounded-full overflow-hidden">
+              <div className="bg-ink-subtle h-full rounded-full" style={{ width: '100%' }} />
+            </div>
+            <span className="w-16 text-right tabular-nums text-ink-muted">${basePrice.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center gap-3 text-[12px]">
+            <span className="w-28 font-medium text-brand shrink-0">Your rate:</span>
+            <div className="flex-1 bg-line h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-brand h-full rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, (finalPrice / basePrice) * 100)}%` }}
+              />
+            </div>
+            <span className="w-16 text-right tabular-nums font-semibold text-brand">${finalPrice.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Collapsible "How this is calculated" explanation section (Open by default) */}
+      <div className="border-t border-line pt-3">
+        <button
+          type="button"
+          onClick={() => setIsFormulaOpen(!isFormulaOpen)}
+          aria-expanded={isFormulaOpen}
+          className="w-full flex items-center justify-between text-[13px] text-ink-muted hover:text-ink py-1 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand rounded-[4px]"
+        >
+          <span className="flex items-center gap-2 font-medium">
+            <HelpCircle className="w-4 h-4 text-ink-subtle stroke-[1.5]" />
+            <span>How this is calculated</span>
+          </span>
+          {isFormulaOpen ? (
+            <ChevronUp className="w-4 h-4 text-ink-subtle stroke-[1.5]" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-ink-subtle stroke-[1.5]" />
+          )}
         </button>
 
-        {showFormula && (
-          <div className="mt-2 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] text-slate-400 font-mono space-y-1">
-            <div>Final = Base ($100) - MileageReward - NightBonus - SafeHabitsReward - DisputeCredits</div>
-            <div className="text-emerald-400">
-              • 100% deterministic actuarial math. Zero hidden or trained black-box neural networks.
-            </div>
+        {isFormulaOpen && (
+          <div className="mt-3 text-[12px] text-ink-muted leading-relaxed space-y-2 rounded-[6px] bg-surface-raised border border-line p-4">
+            <p className="font-mono text-[11px] text-ink bg-bg p-2 rounded border border-line tabular-nums">
+              Final Premium = Base ($100.00) − LowMileageReward − DaytimeBonus − SafeHabitsReward − DisputeCredits + Surcharges
+            </p>
+            <ul className="space-y-1.5 list-disc list-inside text-ink-muted">
+              <li>
+                <strong className="text-ink font-medium">Mileage tier:</strong> Distance under 500 km/month incurs no high-exposure penalty and unlocks baseline reward.
+              </li>
+              <li>
+                <strong className="text-ink font-medium">Time-of-day exposure:</strong> Midnight driving (12:00 AM – 4:00 AM) carries statistically higher collision probability. Zero midnight driving yields maximum credit.
+              </li>
+              <li>
+                <strong className="text-ink font-medium">Deterministic actuarial formula:</strong> No opaque machine-learning black boxes. Every dollar saved corresponds directly to observable physics.
+              </li>
+            </ul>
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

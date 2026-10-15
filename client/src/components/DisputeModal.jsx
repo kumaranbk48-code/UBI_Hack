@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, AlertCircle, ShieldCheck, CheckCircle2, FileText, Send } from 'lucide-react';
+import { X, ShieldCheck, Send, FileText, CheckCircle2 } from 'lucide-react';
+import { Button, Alert } from './primitives';
 
 export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSubmitDispute }) {
   if (!isOpen) return null;
@@ -10,10 +11,10 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
   const [resultMessage, setResultMessage] = useState(null);
 
   const reasons = [
-    { id: 'ANIMAL_EMERGENCY', label: '🐾 Avoided Animal / Road Hazard', desc: 'Emergency braking to save a pedestrian, dog, or road debris.' },
-    { id: 'PASSENGER_CAB', label: '🚕 Passenger in Taxi / Bus / Ride-Share', desc: 'I was not driving during this trip (passenger ride).' },
-    { id: 'POTHOLE_SPIKE', label: '🕳️ Severe Pothole / Dropped Mount', desc: 'Mechanical road impact or phone fell from magnetic mount.' },
-    { id: 'OTHER', label: '⚠️ Other Unusual Circumstance', desc: 'Other valid reason requiring underwriter human review.' },
+    { id: 'ANIMAL_EMERGENCY', label: 'Avoided Animal or Road Obstacle', desc: 'Emergency braking to prevent colliding with pedestrian, animal, or debris.' },
+    { id: 'PASSENGER_CAB', label: 'Passenger in Taxi, Bus, or Ride-Share', desc: 'You were a passenger during this commute and not operating the vehicle.' },
+    { id: 'POTHOLE_SPIKE', label: 'Severe Road Impact or Dropped Mount', desc: 'Abrupt road shock or device dropped from magnetic cradle.' },
+    { id: 'OTHER', label: 'Other Valid Hazard', desc: 'Circumstance requiring human underwriter review.' },
   ];
 
   const handleSubmit = async (e) => {
@@ -39,57 +40,61 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
       setTimeout(() => {
         setResultMessage(null);
         onClose();
-      }, 2000);
+      }, 1800);
     } else {
       onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-700/80 p-6 shadow-2xl overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="disputeModalTitle"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-[2px] animate-fadeIn"
+    >
+      <div className="relative w-full max-w-lg rounded-[10px] bg-surface-raised border border-line p-6 sm:p-7 shadow-popover overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-white">TripCheck™ Dispute Submission</h3>
-              <p className="text-xs text-slate-400">Contest an unfair harsh brake or false penalty.</p>
-            </div>
+        <div className="flex items-start justify-between pb-4 border-b border-line">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
+              Trip Adjudication
+            </span>
+            <h2 id="disputeModalTitle" className="text-xl font-serif font-normal text-ink">
+              Contest flagged driving event
+            </h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white transition">
-            <X className="w-5 h-5" />
+          <button
+            onClick={onClose}
+            className="p-1 rounded-[4px] text-ink-subtle hover:text-ink focus-visible:outline-none"
+            aria-label="Close dialog"
+          >
+            <X className="w-5 h-5 stroke-[1.5]" />
           </button>
         </div>
 
-        {/* Free Passes Counter Banner */}
-        <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2 text-emerald-300">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>
-              <strong className="text-white">Annual Fairness Policy: </strong>
-              You have <span className="font-bold underline text-white">{passesRemaining} of 2</span> Free Passes left this year.
-            </span>
-          </div>
+        {/* Free Passes Banner */}
+        <div className="mt-4 p-3 rounded-[6px] bg-surface border border-line flex items-center justify-between text-[12px]">
+          <span className="text-ink-muted">Annual fairness allocation:</span>
+          <span className="font-medium text-brand tabular-nums">
+            {passesRemaining} of 2 Free Passes remaining
+          </span>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Reason Selection */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-2">
-              Select Reason for Dispute:
+            <label className="text-[12px] font-medium text-ink block mb-2">
+              Reason for contested event
             </label>
             <div className="space-y-2">
               {reasons.map((r) => (
                 <label
                   key={r.id}
-                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border cursor-pointer transition ${
+                  className={`flex items-start gap-3 p-3 rounded-[6px] border cursor-pointer transition-colors ${
                     reason === r.id
-                      ? 'border-emerald-500/60 bg-emerald-500/10'
-                      : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                      ? 'border-brand bg-brand-light/30'
+                      : 'border-line bg-surface hover:border-line-dark'
                   }`}
                 >
                   <input
@@ -98,64 +103,51 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
                     value={r.id}
                     checked={reason === r.id}
                     onChange={() => setReason(r.id)}
-                    className="mt-1 accent-emerald-500"
+                    className="mt-0.5 accent-brand"
                   />
                   <div>
-                    <div className="text-xs font-bold text-white">{r.label}</div>
-                    <div className="text-[11px] text-slate-400">{r.desc}</div>
+                    <div className="text-[13px] font-medium text-ink">{r.label}</div>
+                    <div className="text-[11px] text-ink-muted mt-0.5">{r.desc}</div>
                   </div>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Explanation Textarea */}
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">
-              Brief Explanation:
+            <label className="text-[12px] font-medium text-ink block mb-1">
+              Driver statement
             </label>
             <textarea
-              rows="2"
+              rows={3}
               required
               value={explanation}
               onChange={(e) => setExplanation(e.target.value)}
-              placeholder="e.g., A stray puppy dashed across the road so I had to brake quickly to avoid a collision."
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              placeholder="Describe what occurred (e.g., A stray puppy dashed across the road requiring an immediate full stop)."
+              className="w-full px-3 py-2 rounded-[6px] bg-surface border border-line text-[13px] text-ink placeholder-ink-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             />
           </div>
 
-          {/* Privacy Guarantee Note */}
-          <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2">
-            <FileText className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-            <span>
-              <strong className="text-slate-300">Privacy Safeguard: </strong>
-              Only this single trip's 30-second telemetry snippet is attached for verification. All other trips remain strictly confidential.
-            </span>
+          {/* Privacy Note */}
+          <div className="text-[11px] text-ink-subtle leading-relaxed bg-bg p-2.5 rounded-[6px] border border-line">
+            <strong className="text-ink font-medium">Privacy note: </strong>
+            Only a 30-second telemetry snippet around this specific timestamp will be forwarded to the underwriter. All other trips remain strictly confidential.
           </div>
 
           {resultMessage && (
-            <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs text-center font-medium border border-emerald-500/30">
+            <Alert variant="positive">
               {resultMessage}
-            </div>
+            </Alert>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 rounded-xl"
-            >
+          <div className="flex items-center justify-end space-x-3 pt-3 border-t border-line">
+            <Button type="button" variant="ghost" size="md" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-5 py-2 text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>{submitting ? 'Submitting...' : 'Submit Dispute'}</span>
-            </button>
+            </Button>
+            <Button type="submit" variant="primary" size="md" loading={submitting}>
+              Submit dispute
+            </Button>
           </div>
         </form>
       </div>
