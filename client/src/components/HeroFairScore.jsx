@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowDown, Info } from 'lucide-react';
+import { Skeleton } from './primitives';
 
 export function HeroFairScore({
   score = 94,
@@ -7,11 +8,13 @@ export function HeroFairScore({
   quote,
   metrics,
   isSynced = true,
+  isLoading = false,
 }) {
-  const [displayScore, setDisplayScore] = useState(0);
+  const [displayScore, setDisplayScore] = useState(score || 0);
 
   // Number count-up animation once on load
   useEffect(() => {
+    if (isLoading || !quote) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) {
       setDisplayScore(score);
@@ -36,18 +39,40 @@ export function HeroFairScore({
     }
 
     requestAnimationFrame(updateScore);
-  }, [score]);
+  }, [score, isLoading, quote]);
 
-  const basePrice = quote?.basePremium || 100.0;
-  const finalPrice = quote?.finalPremium || 67.0;
-  const totalSaved = quote?.totalSaved !== undefined ? quote.totalSaved : Math.max(0, basePrice - finalPrice);
-  const discountPct = quote?.discountPercentage || (basePrice > 0 ? Math.round((totalSaved / basePrice) * 100) : 0);
+  if (isLoading || !quote) {
+    return (
+      <div className="rounded-[10px] bg-surface border border-line p-6 sm:p-8 space-y-4">
+        <Skeleton className="h-5 w-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+          <div className="flex items-center gap-6">
+            <Skeleton className="w-32 h-32 rounded-full shrink-0" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-6 w-36" />
+              <Skeleton className="h-4 w-44" />
+            </div>
+          </div>
+          <div className="space-y-3 justify-center flex flex-col">
+            <Skeleton className="h-10 w-44" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Slim-stroke arc math (radius 60, stroke 4, 240 deg arc)
-  const radius = 54;
-  const stroke = 4.5;
+  const basePrice = quote.basePremium || 100.0;
+  const finalPrice = quote.finalPremium || 72.0;
+  const totalSaved = quote.totalSaved !== undefined ? quote.totalSaved : Math.max(0, basePrice - finalPrice);
+  const discountPct = quote.discountPercentage || (basePrice > 0 ? Math.round((totalSaved / basePrice) * 100) : 0);
+
+  // Larger slim-stroke arc (radius 72, stroke 3.5, 240 deg arc)
+  const radius = 72;
+  const stroke = 3.5;
   const circumference = 2 * Math.PI * radius;
-  const arcLength = circumference * 0.72;
+  // 240 degrees out of 360 = 2/3 of circle
+  const arcLength = circumference * (2 / 3);
   const strokeDashoffset = arcLength - ((displayScore / 100) * arcLength);
 
   // Plain language verdict
@@ -66,17 +91,25 @@ export function HeroFairScore({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Column: Monthly FairScore & Arc Gauge */}
         <div className="lg:col-span-7 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          {/* Slim Arc Meter */}
-          <div className="relative w-36 h-36 shrink-0 flex items-center justify-center" aria-hidden="true">
+          {/* Slim Arc Meter with clear space and accessible meter role */}
+          <div
+            className="relative w-44 h-44 shrink-0 flex items-center justify-center"
+            role="meter"
+            aria-label={`FairScore: ${displayScore} out of 100`}
+            aria-valuenow={displayScore}
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
             <svg
-              width="144"
-              height="144"
-              className="rotate-[140deg] transition-all duration-300"
+              width="176"
+              height="176"
+              className="rotate-[150deg] transition-all duration-300"
+              aria-hidden="true"
             >
               {/* Background hairline track */}
               <circle
-                cx="72"
-                cy="72"
+                cx="88"
+                cy="88"
                 r={radius}
                 stroke="#E4DDD0"
                 strokeWidth={stroke}
@@ -84,10 +117,10 @@ export function HeroFairScore({
                 strokeDasharray={`${arcLength} ${circumference}`}
                 strokeLinecap="round"
               />
-              {/* Active brand arc */}
+              {/* Active thin brand-green stroke */}
               <circle
-                cx="72"
-                cy="72"
+                cx="88"
+                cy="88"
                 r={radius}
                 stroke="#1F3A34"
                 strokeWidth={stroke}
@@ -99,12 +132,12 @@ export function HeroFairScore({
               />
             </svg>
 
-            {/* Score inside arc */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-serif text-[68px] sm:text-[72px] leading-none font-normal text-brand tabular-nums tracking-tight">
+            {/* Score inside arc with comfortable clearance and no overlap */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
+              <span className="font-serif text-[56px] sm:text-[60px] leading-none font-normal text-brand tabular-nums tracking-tight">
                 {displayScore}
               </span>
-              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle -mt-1">
+              <span className="text-[12px] font-medium text-ink-muted mt-1.5 tabular-nums">
                 out of 100
               </span>
             </div>
@@ -136,8 +169,9 @@ export function HeroFairScore({
 
         {/* Right Column: Month's Premium & Savings */}
         <div className="lg:col-span-4 flex flex-col justify-center text-center sm:text-left">
-          <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
-            Current Month's Rate
+          {/* Sentence case 13px label per Phase 1 item 4 */}
+          <span className="text-[13px] text-ink-muted block mb-1 font-normal">
+            Current month's rate
           </span>
 
           <div className="flex items-baseline justify-center sm:justify-start gap-1.5">

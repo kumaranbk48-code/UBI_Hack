@@ -15,7 +15,8 @@ export default {
         ink: {
           DEFAULT: '#1C1A17',
           muted: '#5E5A52',
-          subtle: '#8D887D',
+          /* Darkened for WCAG AA compliance (>= 4.5:1 on --surface and --bg) */
+          subtle: '#6F6A60',
         },
         line: {
           DEFAULT: '#E4DDD0',
@@ -27,13 +28,15 @@ export default {
           light: '#EAEFEA',
         },
         accent: {
-          DEFAULT: '#B5833A',
+          /* Darkened for WCAG AA compliance (>= 4.5:1 on --surface and --bg) */
+          DEFAULT: '#93631D',
           tint: '#F9F5EC',
         },
         status: {
           positive: '#2F6B4F',
           'positive-tint': 'rgba(47, 107, 79, 0.08)',
-          warning: '#A8661F',
+          /* Darkened for WCAG AA compliance (>= 4.5:1 on --warning-tint) */
+          warning: '#945511',
           'warning-tint': 'rgba(168, 102, 31, 0.08)',
           danger: '#9B3B30',
           'danger-tint': 'rgba(155, 59, 48, 0.08)',

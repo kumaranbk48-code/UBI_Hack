@@ -57,7 +57,7 @@ for (let i = 0; i < 20; i++) {
 
 // 2. Aggressive Midnight Driver (1:15 AM, 95 km/h, 3 harsh brakes)
 const aggressiveRows = [];
-let odo2 = 14225.0;
+let odo2 = 14200.0;
 for (let i = 0; i < 20; i++) {
   const min = (15 + i).toString().padStart(2, '0');
   let speed = 85 + (i % 3) * 10;

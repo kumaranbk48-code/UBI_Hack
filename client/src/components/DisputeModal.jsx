@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, ShieldCheck, Send, FileText, CheckCircle2 } from 'lucide-react';
 import { Button, Alert } from './primitives';
 
@@ -9,6 +9,42 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
   const [explanation, setExplanation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [resultMessage, setResultMessage] = useState(null);
+  const closeBtnRef = useRef(null);
+  const cancelBtnRef = useRef(null);
+
+  const modalRef = useRef(null);
+
+  // Accessible dialog: close on Escape key & trap focus
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const reasons = [
     { id: 'ANIMAL_EMERGENCY', label: 'Avoided Animal or Road Obstacle', desc: 'Emergency braking to prevent colliding with pedestrian, animal, or debris.' },
@@ -51,9 +87,12 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
       role="dialog"
       aria-modal="true"
       aria-labelledby="disputeModalTitle"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-[2px] animate-fadeIn"
     >
-      <div className="relative w-full max-w-lg rounded-[10px] bg-surface-raised border border-line p-6 sm:p-7 shadow-popover overflow-hidden">
+      <div ref={modalRef} className="relative w-full max-w-lg rounded-[10px] bg-surface-raised border border-line p-6 sm:p-7 shadow-popover overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between pb-4 border-b border-line">
           <div>
@@ -65,8 +104,9 @@ export function DisputeModal({ isOpen, onClose, trip, passesRemaining = 2, onSub
             </h2>
           </div>
           <button
+            ref={closeBtnRef}
             onClick={onClose}
-            className="p-1 rounded-[4px] text-ink-subtle hover:text-ink focus-visible:outline-none"
+            className="p-1 rounded-[4px] text-ink-subtle hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand min-w-[32px] min-h-[32px] flex items-center justify-center"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5 stroke-[1.5]" />

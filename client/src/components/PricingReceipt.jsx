@@ -1,9 +1,33 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, FileText, ArrowDown, HelpCircle, Check, AlertCircle } from 'lucide-react';
-import { Alert } from './primitives';
+import { ChevronDown, ChevronUp, FileText, ArrowDown, HelpCircle, Check, AlertCircle, Printer } from 'lucide-react';
+import { Alert, Skeleton } from './primitives';
 
-export function PricingReceipt({ quote, isSynced = true }) {
+export function PricingReceipt({ quote, isSynced = true, isLoading = false }) {
   const [isFormulaOpen, setIsFormulaOpen] = useState(true);
+
+  if (isLoading || !quote) {
+    return (
+      <section
+        aria-label="How your price was calculated"
+        className="py-12 border-t border-line space-y-6"
+      >
+        <div className="pb-4 mb-5 border-b border-line flex items-baseline justify-between">
+          <div>
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
+              Actuarial Statement
+            </span>
+            <Skeleton className="h-6 w-64" />
+          </div>
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <div className="space-y-3 pt-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </section>
+    );
+  }
 
   const basePrice = quote?.basePremium || 100.0;
   const finalPrice = quote?.finalPremium || 100.0;
@@ -21,11 +45,12 @@ export function PricingReceipt({ quote, isSynced = true }) {
   return (
     <section
       aria-label="How your price was calculated"
-      className="rounded-[10px] bg-surface border border-line p-6 sm:p-7 shadow-soft"
+      className="py-12 border-t border-line space-y-6"
     >
       {/* Section Header */}
-      <div className="pb-4 mb-5 border-b border-line flex items-baseline justify-between">
+      <div className="pb-4 mb-5 border-b border-line flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
         <div>
+          {/* Eyebrow: max 11px, 0.08em tracking per Phase 1 item 4 */}
           <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-ink-subtle block mb-1">
             Actuarial Statement
           </span>
@@ -33,9 +58,21 @@ export function PricingReceipt({ quote, isSynced = true }) {
             How your price was calculated
           </h2>
         </div>
-        <span className="text-[12px] text-ink-subtle tabular-nums font-mono">
-          REF: #{new Date().getFullYear()}-UBI-0842
-        </span>
+        {/* Normal UI font and tabular-nums per Phase 1 item 6 */}
+        <div className="flex items-center gap-3">
+          <span className="text-[12px] text-ink-subtle tabular-nums">
+            REF: #{new Date().getFullYear()}-UBI-0842
+          </span>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="text-[12px] text-brand hover:underline font-medium inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand print:hidden"
+            aria-label="Print or save statement"
+          >
+            <Printer className="w-3.5 h-3.5 stroke-[1.5]" />
+            <span>Print or save statement</span>
+          </button>
+        </div>
       </div>
 
       {/* Sync Reminder / Default Notice */}
@@ -50,15 +87,16 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </div>
       )}
 
-      {/* Printed Invoice / Statement Style Receipt */}
-      <div className="rounded-[6px] bg-surface-raised border border-line p-5 sm:p-6 mb-5">
-        <div className="text-[11px] uppercase tracking-[0.08em] text-ink-subtle pb-3 border-b border-line font-medium flex justify-between">
-          <span>Coverage Item</span>
+      {/* Open Receipt Section Divided by Hairline Rules (No bordered card-in-card) */}
+      <div className="space-y-4">
+        {/* Sentence case 13px --ink-muted headers per Phase 1 item 4 */}
+        <div className="text-[13px] text-ink-muted pb-3 border-b border-line font-normal flex justify-between">
+          <span>Coverage item</span>
           <span>Adjustment</span>
         </div>
 
         {/* Itemized Lines */}
-        <div className="divide-y divide-line/60 py-1">
+        <div className="divide-y divide-line/70 py-1">
           {lines.map((line, idx) => {
             const isNegative = line.amount < 0;
             const isSurcharge = line.amount > 0 && line.type === 'surcharge';
@@ -91,28 +129,28 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </div>
 
         {/* Subtotal / Total Calculation Rule */}
-        <div className="mt-2 pt-3 border-t-2 border-line space-y-1.5">
-          <div className="flex justify-between items-center text-[12px] text-ink-muted">
-            <span>Market Benchmark Subtotal</span>
+        <div className="mt-2 pt-3 border-t-2 border-line space-y-2">
+          <div className="flex justify-between items-center text-[13px] text-ink-muted">
+            <span>Market benchmark subtotal</span>
             <span className="tabular-nums">${basePrice.toFixed(2)}</span>
           </div>
           {totalSaved > 0 && (
-            <div className="flex justify-between items-center text-[12px] text-brand font-medium">
-              <span>Cumulative Safe Driving Credit</span>
+            <div className="flex justify-between items-center text-[13px] text-brand font-medium">
+              <span>Cumulative safe driving credit</span>
               <span className="tabular-nums">-${totalSaved.toFixed(2)}</span>
             </div>
           )}
-          <div className="pt-2 border-t border-line flex justify-between items-baseline">
+          <div className="pt-3 border-t border-line flex justify-between items-baseline">
             <div>
-              <span className="text-[14px] font-semibold text-ink">
-                Adjusted Monthly Premium
+              <span className="text-[15px] font-semibold text-ink">
+                Adjusted monthly premium
               </span>
-              <span className="block text-[11px] text-ink-subtle">
+              <span className="block text-[12px] text-ink-subtle">
                 Billed monthly • Fully deterministic
               </span>
             </div>
             <div className="text-right">
-              <span className="font-serif text-2xl font-normal text-brand tabular-nums">
+              <span className="font-serif text-3xl font-normal text-brand tabular-nums">
                 ${finalPrice.toFixed(2)}
               </span>
               <span className="text-xs text-ink-muted font-normal ml-1">/ month</span>
@@ -121,9 +159,9 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </div>
       </div>
 
-      {/* Clean Single Comparison (Standard Rate vs. Your Rate) */}
-      <div className="rounded-[6px] border border-line bg-surface p-4 mb-5">
-        <div className="flex items-center justify-between text-[12px] mb-2">
+      {/* Clean Single Comparison Divided by Hairline Rule */}
+      <div className="pt-6 border-t border-line space-y-3">
+        <div className="flex items-center justify-between text-[13px]">
           <span className="text-ink-muted">Market rate comparison</span>
           <span className="text-brand font-medium tabular-nums">
             {discountPct}% lower than benchmark
@@ -131,7 +169,7 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </div>
 
         {/* Proportional dual meter */}
-        <div className="space-y-2">
+        <div className="space-y-2 max-w-xl">
           <div className="flex items-center gap-3 text-[12px]">
             <span className="w-28 text-ink-subtle shrink-0">Standard rate:</span>
             <div className="flex-1 bg-line h-2 rounded-full overflow-hidden">
@@ -152,8 +190,8 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </div>
       </div>
 
-      {/* Collapsible "How this is calculated" explanation section (Open by default) */}
-      <div className="border-t border-line pt-3">
+      {/* Collapsible "How this is calculated" explanation section */}
+      <div className="border-t border-line pt-4">
         <button
           type="button"
           onClick={() => setIsFormulaOpen(!isFormulaOpen)}
@@ -172,11 +210,11 @@ export function PricingReceipt({ quote, isSynced = true }) {
         </button>
 
         {isFormulaOpen && (
-          <div className="mt-3 text-[12px] text-ink-muted leading-relaxed space-y-2 rounded-[6px] bg-surface-raised border border-line p-4">
-            <p className="font-mono text-[11px] text-ink bg-bg p-2 rounded border border-line tabular-nums">
+          <div className="mt-3 text-[12px] text-ink-muted leading-relaxed space-y-2 pt-2">
+            <p className="font-mono text-[11px] text-ink bg-surface p-2.5 rounded border border-line tabular-nums">
               Final Premium = Base ($100.00) − LowMileageReward − DaytimeBonus − SafeHabitsReward − DisputeCredits + Surcharges
             </p>
-            <ul className="space-y-1.5 list-disc list-inside text-ink-muted">
+            <ul className="space-y-1.5 list-disc list-inside text-ink-muted pt-1">
               <li>
                 <strong className="text-ink font-medium">Mileage tier:</strong> Distance under 500 km/month incurs no high-exposure penalty and unlocks baseline reward.
               </li>
